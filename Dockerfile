@@ -40,7 +40,7 @@ WORKDIR /var/www/html
 # Copy the application source code
 # We copy the specific directories and files needed by the app
 
-COPY .env .
+COPY . .
 COPY edit-profile.html .
 COPY index.html .
 COPY profile.html .
