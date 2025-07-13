@@ -41,7 +41,6 @@ WORKDIR /var/www/html
 COPY .env .
 COPY edit-profile.html .
 COPY index.html .
-COPY netlify.toml .
 COPY profile.html .
 COPY register.html .
 COPY assets/ ./assets/
