@@ -1,10 +1,9 @@
 # Stage 1: Install PHP dependencies with Composer
 FROM composer:2 as composer_stage
 RUN apk add --no-cache autoconf build-base
-RUN pecl install mongodb && docker-php-ext-enable mongodb
-WORKDIR /app
+WORKDIR /app/php
 # Copy only the composer files for the main application
-COPY php/composer.json php/composer.lock ./
+COPY php/ ./
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
@@ -41,6 +40,7 @@ WORKDIR /var/www/html
 # Copy the application source code
 # We copy the specific directories and files needed by the app
 
+COPY .env .
 COPY edit-profile.html .
 COPY index.html .
 COPY profile.html .
@@ -52,7 +52,7 @@ COPY php/ ./php/
 COPY uploads/ ./uploads/
 
 # Copy the installed dependencies from the composer stage
-COPY --from=composer_stage /app/vendor/ /var/www/html/php/vendor/
+COPY --from=composer_stage /app/php/vendor/ /var/www/html/php/vendor/
 
 # Set permissions
 # Make the uploads directory writable by the web server
