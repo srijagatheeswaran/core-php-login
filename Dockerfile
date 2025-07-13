@@ -3,11 +3,13 @@ FROM composer:2 AS composer_stage
 
 WORKDIR /app
 
-# Only copy composer files
-COPY composer.json composer.lock ./
+# Copy only the composer files inside php folder
+COPY php/composer.json php/composer.lock ./php/
+
+WORKDIR /app/php
 
 # Install dependencies
-# RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader
 
 # Stage 2: Final PHP-Apache image
 FROM php:8.1-apache
@@ -28,11 +30,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /var/www/html
 
-# Copy all your project files into the container
+# Copy application code
 COPY . .
 
-# Copy vendor folder from composer stage
-COPY --from=composer_stage /app/vendor/ /var/www/html/php/vendor/
+# Copy installed vendor from composer stage
+COPY --from=composer_stage /app/php/vendor/ /var/www/html/php/vendor/
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html/uploads \
