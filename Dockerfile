@@ -24,9 +24,6 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy project files into the container
 COPY . /var/www/html
 
-# Ensure the .env file is copied (optional: make sure it's not in .dockerignore)
-COPY .env /var/www/html/.env
-
 # Install PHP dependencies via Composer
 RUN composer install --no-dev --optimize-autoloader
 
