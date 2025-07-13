@@ -7,7 +7,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 
 # Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# RUN composer install --no-dev --optimize-autoloader
 
 # Stage 2: Final PHP-Apache image
 FROM php:8.1-apache
