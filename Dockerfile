@@ -1,43 +1,41 @@
 # Stage 1: Install PHP dependencies with Composer
-FROM composer:2 as composer_stage
+FROM composer:2 AS composer_stage
 
 WORKDIR /app
 
-# Copy composer files from root directory
+# Only copy composer files
 COPY composer.json composer.lock ./
 
 # Install dependencies
-#RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader
 
-# Stage 2: Build the final application image
+# Stage 2: Final PHP-Apache image
 FROM php:8.1-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libzip-dev \
     unzip \
+    libzip-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    curl \
     libssl-dev \
+    curl \
     && docker-php-ext-install pdo pdo_mysql zip gd \
     && pecl install mongodb redis \
     && docker-php-ext-enable mongodb redis \
-    && a2enmod rewrite \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && a2enmod rewrite
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy your app source code
+# Copy all your project files into the container
 COPY . .
 
-# Copy installed vendor folder from composer stage
-COPY --from=composer_stage /app/vendor/ /var/www/html/vendor/
+# Copy vendor folder from composer stage
+COPY --from=composer_stage /app/vendor/ /var/www/html/php/vendor/
 
-# Set permissions (especially for uploads folder)
-RUN chown -R www-data:www-data ./uploads && chmod -R 775 ./uploads
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/html/uploads \
+    && chmod -R 775 /var/www/html/uploads
 
-# Expose port 80 for Apache
 EXPOSE 80
