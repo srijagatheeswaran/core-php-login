@@ -1,43 +1,47 @@
-# Stage 1: Install PHP dependencies with Composer
-FROM composer:2 AS composer_stage
+# Stage 1: Composer dependencies install
+FROM composer:2 as composer_stage
 
 WORKDIR /app
 
-# Copy only the composer files inside php folder
-COPY php/composer.json php/composer.lock ./php/
+# Copy only composer files
+COPY composer.json composer.lock ./
 
-WORKDIR /app/php
-
-# Install dependencies
+# Install dependencies (no dev)
 RUN composer install --no-dev --optimize-autoloader
 
-# Stage 2: Final PHP-Apache image
+# Stage 2: Build the full PHP + Apache image
 FROM php:8.1-apache
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
-    unzip \
     libzip-dev \
+    unzip \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    libssl-dev \
     curl \
-    && docker-php-ext-install pdo pdo_mysql zip gd \
-    && pecl install mongodb redis \
-    && docker-php-ext-enable mongodb redis \
-    && a2enmod rewrite
+    libssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# PHP extensions
+RUN pecl install mongodb redis \
+    && docker-php-ext-enable mongodb redis
+
+RUN docker-php-ext-install pdo pdo_mysql zip gd
+
+# Enable Apache Rewrite
+RUN a2enmod rewrite
+
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy application code
+# Copy app source
 COPY . .
 
-# Copy installed vendor from composer stage
-COPY --from=composer_stage /app/php/vendor/ /var/www/html/php/vendor/
+# Copy composer vendor folder from previous stage
+COPY --from=composer_stage /app/vendor ./vendor
 
-# Set correct permissions
+# Set proper permissions
 RUN chown -R www-data:www-data /var/www/html/uploads \
     && chmod -R 775 /var/www/html/uploads
-
-EXPOSE 80
