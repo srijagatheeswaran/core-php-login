@@ -1,17 +1,62 @@
-# Use official PHP image with Apache
+# Stage 1: Install PHP dependencies with Composer
+FROM composer:2 as composer_stage
+WORKDIR /app
+# Copy only the composer files for the main application
+COPY php/composer.json php/composer.lock ./
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# Stage 2: Build the final application image
 FROM php:8.1-apache
 
+# Install system dependencies required for PHP extensions
+# libssl-dev is needed for the mongodb pecl extension
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    curl \
+    libssl-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install required PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql
+# The mongodb and redis extensions provide better performance
+RUN pecl install mongodb redis \
+    && docker-php-ext-enable mongodb redis
 
-# Copy project files
-COPY . /var/www/html/
+# Install other core extensions
+RUN docker-php-ext-install pdo pdo_mysql zip gd
 
-# Enable Apache mod_rewrite
+# Enable Apache's mod_rewrite for clean URLs (e.g., for routing)
 RUN a2enmod rewrite
 
-# Set working directory
+# Set the working directory to Apache's default document root
 WORKDIR /var/www/html
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html
+# Copy the application source code
+# We copy the specific directories and files needed by the app
+COPY .env .
+COPY edit-profile.html .
+COPY index.html .
+COPY netlify.toml .
+COPY profile.html .
+COPY register.html .
+COPY assets/ ./assets/
+COPY css/ ./css/
+COPY js/ ./js/
+COPY php/ ./php/
+COPY uploads/ ./uploads/
+
+# Copy the installed dependencies from the composer stage
+COPY --from=composer_stage /app/vendor/ /var/www/html/php/vendor/
+
+# Set permissions
+# Make the uploads directory writable by the web server
+RUN chown -R www-data:www-data /var/www/html/uploads \
+    && chmod -R 775 /var/www/html/uploads
+
+# Set ownership for all application files to the web server user
+RUN chown -R www-data:www-data /var/w...TRUNCATED
