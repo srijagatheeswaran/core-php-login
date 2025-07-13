@@ -1,17 +1,19 @@
-# Stage 1: Install PHP dependencies with Composer
+# Stage 1: Composer - install PHP dependencies
 FROM composer:2 as composer_stage
-RUN apk add --no-cache autoconf build-base
-WORKDIR /app/php
-# Copy only the composer files for the main application
-COPY php/ ./
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Stage 2: Build the final application image
+# Set working directory in Composer container
+WORKDIR /app/php
+
+# Copy composer files
+COPY php/composer.json php/composer.lock ./
+
+# Install dependencies without dev for production
+RUN composer install --no-dev --optimize-autoloader
+
+# Stage 2: Apache + PHP runtime
 FROM php:8.1-apache
 
-# Install system dependencies required for PHP extensions
-# libssl-dev is needed for the mongodb pecl extension
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     unzip \
@@ -23,41 +25,40 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install required PHP extensions
-# The mongodb and redis extensions provide better performance
-RUN pecl install mongodb redis \
+# Install PHP extensions (PDO MySQL, ZIP, GD, Redis, MongoDB)
+RUN docker-php-ext-install pdo pdo_mysql zip gd \
+    && pecl install mongodb redis \
     && docker-php-ext-enable mongodb redis
 
-# Install other core extensions
-RUN docker-php-ext-install pdo pdo_mysql zip gd
-
-# Enable Apache's mod_rewrite for clean URLs (e.g., for routing)
+# Enable Apache rewrite module
 RUN a2enmod rewrite
 
-# Set the working directory to Apache's default document root
+# Set working directory for app
 WORKDIR /var/www/html
 
-# Copy the application source code
-# We copy the specific directories and files needed by the app
-
+# Copy your project files
 COPY . .
-COPY edit-profile.html .
-COPY index.html .
-COPY profile.html .
-COPY register.html .
+
+# Copy specific folders to ensure proper structure
+COPY edit-profile.html ./
+COPY index.html ./
+COPY profile.html ./
+COPY register.html ./
 COPY assets/ ./assets/
 COPY css/ ./css/
 COPY js/ ./js/
 COPY php/ ./php/
 COPY uploads/ ./uploads/
 
-# Copy the installed dependencies from the composer stage
+# Copy composer-installed vendor folder from composer stage
 COPY --from=composer_stage /app/php/vendor/ /var/www/html/php/vendor/
 
-# Set permissions
-# Make the uploads directory writable by the web server
+# Optional: copy the .env file (make sure it's not in .dockerignore)
+COPY .env /var/www/html/php/.env
+
+# Set proper permissions for uploads
 RUN chown -R www-data:www-data /var/www/html/uploads \
     && chmod -R 775 /var/www/html/uploads
 
-# Set ownership for all application files to the web server user
-RUN chown -R www-data:www-data /var/w...TRUNCATED
+# Expose Apache port
+EXPOSE 80
