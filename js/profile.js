@@ -32,7 +32,7 @@ $(document).ready(function () {
         error: function (xhr, status, error) {
             console.error("AJAX error:", error);
             alert("Something went wrong. Try again.");
-            window.location.href = "index.html";
+            // window.location.href = "index.html";
         }
     });
 });
