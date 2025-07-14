@@ -24,6 +24,7 @@ $(document).ready(function () {
                 $("#previewImage").attr("src", user.profile_image || "./assets/user.png");
                 $("#location").text(user.location || "Not provided");
                 $("#joined").text(formatDate(user.created_at));
+                $('.loader').hide();
             } else {
                 alert("Session expired or invalid token.");
                 window.location.href = "index.html";
@@ -32,7 +33,7 @@ $(document).ready(function () {
         error: function (xhr, status, error) {
             console.error("AJAX error:", error);
             alert("Something went wrong. Try again.");
-            // window.location.href = "index.html";
+            window.location.href = "index.html";
         }
     });
 });
