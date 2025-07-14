@@ -19,20 +19,14 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Create the php directory for composer files
-RUN mkdir -p php
-
-# Copy only the composer files into the php directory first to leverage caching
-COPY php/composer.json php/composer.lock ./php/
-
-# Run composer install within the php directory
-RUN composer install --working-dir=/var/www/html/php --no-dev --prefer-dist --no-interaction --optimize-autoloader
-
-# Now copy the rest of the application code
+# Copy all project files (including composer.json etc.)
 COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 # Set permissions for uploads directory
 RUN chown -R www-data:www-data /var/www/html/uploads
 
-# Expose port 80 for the web server
+# Expose port 80
 EXPOSE 80
