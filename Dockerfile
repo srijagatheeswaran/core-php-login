@@ -1,10 +1,14 @@
 FROM php:8.2-apache
 
-# Install system dependencies & mongodb extension
-RUN apt-get update && apt-get install -y     libssl-dev     libonig-dev     libzip-dev     unzip     && pecl install mongodb     && docker-php-ext-enable mongodb
-
-# Install other PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql zip
+# Install system dependencies & required PHP extensions
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    libonig-dev \
+    libzip-dev \
+    unzip \
+    && pecl install mongodb \
+    && docker-php-ext-enable mongodb \
+    && docker-php-ext-install pdo pdo_mysql zip mbstring sockets
 
 # Enable apache rewrite module
 RUN a2enmod rewrite
@@ -15,12 +19,17 @@ COPY --from=composer /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
-# This is done before composer install to leverage Docker layer caching
-COPY . .
+# Create the php directory for composer files
+RUN mkdir -p php
 
-# Run composer install in the php directory where the correct composer.json is located
+# Copy only the composer files into the php directory first to leverage caching
+COPY php/composer.json php/composer.lock ./php/
+
+# Run composer install within the php directory
 RUN composer install --working-dir=/var/www/html/php --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
+# Now copy the rest of the application code
+COPY . .
 
 # Set permissions for uploads directory
 RUN chown -R www-data:www-data /var/www/html/uploads
