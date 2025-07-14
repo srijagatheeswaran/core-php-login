@@ -23,7 +23,7 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install PHP dependencies
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --ignore-platform-req=ext-mongodb
 
 # Set permissions for uploads directory
 RUN chown -R www-data:www-data /var/www/html/uploads
