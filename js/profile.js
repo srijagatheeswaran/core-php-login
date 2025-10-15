@@ -28,7 +28,7 @@ $(document).ready(function () {
                 $('.loader').hide();
             } else {
                 alert("Session expired or invalid token.");
-                // window.location.href = "index.html";
+                window.location.href = "index.html";
             }
         },
         error: function (xhr, status, error) {
