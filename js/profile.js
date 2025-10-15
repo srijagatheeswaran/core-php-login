@@ -15,6 +15,7 @@ $(document).ready(function () {
         },
         dataType: "json",
         success: function (data) {
+            console.log(data);
             if (data.status === "success") {
                 const user = data.user;
                 $("#fullName").text(user.username);
@@ -27,7 +28,7 @@ $(document).ready(function () {
                 $('.loader').hide();
             } else {
                 alert("Session expired or invalid token.");
-                window.location.href = "index.html";
+                // window.location.href = "index.html";
             }
         },
         error: function (xhr, status, error) {
